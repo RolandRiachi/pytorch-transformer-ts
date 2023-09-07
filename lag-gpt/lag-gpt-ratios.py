@@ -8,9 +8,10 @@ from hashlib import sha1
 
 from gluonts.evaluation import make_evaluation_predictions, Evaluator
 from gluonts.dataset.repository.datasets import get_dataset
-import pytorch_lightning as pl
+import comet_ml
 from pytorch_lightning.loggers import CSVLogger, WandbLogger, CometLogger
 from pytorch_lightning.callbacks import ModelCheckpoint, DeviceStatsMonitor, EarlyStopping
+import pytorch_lightning as pl
 
 from estimator import LagGPTEstimator
 from pathlib import Path
@@ -25,6 +26,7 @@ parser.add_argument("--suffix", default="", type=str)
 parser.add_argument("--seed", default=42, type=int)
 parser.add_argument("--dataset_path", default="/home/toolkit/datasets", type=str)
 parser.add_argument("--precision", default="32", type=str, choices=["32", "16", "bf16-mixed"])
+parser.add_argument("--ratio", default=1, type=int)
 args = parser.parse_args()
 
 with open(args.filename, mode="rt", encoding="utf-8") as file:
@@ -100,13 +102,16 @@ gluonts_ds = [
         get_dataset("m4_yearly", path=dataset_path).train,
         get_dataset("wind_farms_without_missing", path=dataset_path).train,
 ]
-dataset = CombinedDataset(gluonts_ds, weights=([sum([len(x["target"]) for x in d]) for d in gluonts_ds] if config["dataset"]["weighted"] else None)   )
+dataset = CombinedDataset(gluonts_ds, 
+                          weights=([sum([len(x["target"]) for x in d]) for d in gluonts_ds] if config["dataset"]["weighted"] else None),
+                          seed=args.seed
+                          )
 
 val_dataset = get_dataset(config["dataset"]["val"], path=dataset_path).test
 meta = get_dataset(config["dataset"]["val"], path=dataset_path).metadata
 
 # Make the experiment_name
-experiment_name = "layer-head-scaling-"+str(config["gpt"]["n_layer"])+"-"+str(config["gpt"]["n_head"])+args.suffix
+experiment_name = "layer-head-scaling-"+str(config["gpt"]["n_layer"])+"-"+str(config["gpt"]["n_head"])+"-"+args.suffix
 fulldir = os.path.join(pathlib.Path(__file__).parent.resolve(), experiment_name, str(args.seed))
 os.makedirs(fulldir, exist_ok=True)
 
@@ -133,10 +138,11 @@ if "metrics" in config:
         experiment_logger = CSVLogger(save_dir=fulldir)
     elif config["metrics"]["logger"] == "comet" and "comet" in config:
         experiment_logger = CometLogger(api_key=config["comet"]["api_key"],
-                                        project_name=config["comet"]["project"] if "comet" in config \
-                                                                                and "project" in config["comet"] \
-                                                                                else "ratio_logs",
-                                        workspace=config["comet"]["workspace"]
+                                        project_name=config["comet"]["project"],
+                                        workspace=config["comet"]["workspace"],
+                                        save_dir=fulldir,
+                                        experiment_name=experiment_name,
+                                        auto_output_logging='simple'
                                        )
     else:
         tags = config["wandb"]["tags"] if "wandb" in config and "tags" in config["wandb"] else []
@@ -160,15 +166,15 @@ logger = [experiment_logger]
 #     mode='min'
 # )
 early_stop_callback = EarlyStopping(monitor="val_loss", min_delta=0.00, patience=50, verbose=True, mode="min")
-callbacks=[early_stop_callback]
-# callbacks = []
+# callbacks=[early_stop_callback]
+callbacks = []
 
 estimator = LagGPTEstimator(
     prediction_length=config["gpt"]["prediction_length"] if "prediction_length" in config["gpt"] else meta.prediction_length,
     context_length=config["gpt"]["context_length"], # block_size: int = 2048 
     batch_size=config["gpt"]["batch_size"], # 4
-    n_layer=config["gpt"]["n_layer"],
-    n_head=config["gpt"]["n_head"],
+    n_layer=config["gpt"]["n_layer"] * args.ratio, # Investigate scaling ratio
+    n_head=config["gpt"]["n_head"] * args.ratio,
     n_embd=config["gpt"]["n_embd_per_head"]*config["gpt"]["n_head"], # 4096
     scaling=config["gpt"]["scaling"],
     aug_prob = config["gpt"]["aug_prob"],
