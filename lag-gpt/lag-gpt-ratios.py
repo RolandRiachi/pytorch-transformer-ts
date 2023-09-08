@@ -112,7 +112,8 @@ meta = get_dataset(config["dataset"]["val"], path=dataset_path).metadata
 
 # Make the experiment_name
 experiment_name = "layer-head-scaling-"+str(config["gpt"]["n_layer"])+"-"+str(config["gpt"]["n_head"])+"-"+args.suffix+"-ratio-"+str(args.ratio)
-fulldir = os.path.join(pathlib.Path(__file__).parent.resolve(), experiment_name, str(args.seed))
+checkpoint_folder_name = "layer-head-scaling"
+fulldir = os.path.join(pathlib.Path(__file__).parent.resolve(), checkpoint_folder_name, experiment_name, str(args.seed))
 os.makedirs(fulldir, exist_ok=True)
 
 # Code to retrieve the version with the highest #epoch stored and restore it incl directory and its checkpoint
@@ -175,7 +176,7 @@ estimator = LagGPTEstimator(
     batch_size=config["gpt"]["batch_size"], # 4
     n_layer=config["gpt"]["n_layer"] * args.ratio, # Investigate scaling ratio
     n_head=config["gpt"]["n_head"] * args.ratio,
-    n_embd=config["gpt"]["n_embd_per_head"]*config["gpt"]["n_head"], # 4096
+    n_embd=config["gpt"]["n_embd_per_head"]*config["gpt"]["n_head"] * args.ratio, # 4096
     scaling=config["gpt"]["scaling"],
     aug_prob = config["gpt"]["aug_prob"],
     aug_rate = config["gpt"]["aug_rate"],
