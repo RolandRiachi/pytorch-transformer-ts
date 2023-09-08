@@ -111,7 +111,7 @@ val_dataset = get_dataset(config["dataset"]["val"], path=dataset_path).test
 meta = get_dataset(config["dataset"]["val"], path=dataset_path).metadata
 
 # Make the experiment_name
-experiment_name = "layer-head-scaling-"+str(config["gpt"]["n_layer"])+"-"+str(config["gpt"]["n_head"])+"-"+args.suffix
+experiment_name = "layer-head-scaling-"+str(config["gpt"]["n_layer"])+"-"+str(config["gpt"]["n_head"])+"-"+args.suffix+"-ratio-"+str(args.ratio)
 fulldir = os.path.join(pathlib.Path(__file__).parent.resolve(), experiment_name, str(args.seed))
 os.makedirs(fulldir, exist_ok=True)
 
