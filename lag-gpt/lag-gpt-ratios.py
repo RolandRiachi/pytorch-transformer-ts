@@ -114,6 +114,7 @@ meta = get_dataset(config["dataset"]["val"], path=dataset_path).metadata
 experiment_name = "layer-head-scaling-"+str(config["gpt"]["n_layer"])+"-"+str(config["gpt"]["n_head"])+"-"+args.suffix+"-ratio-"+str(args.ratio)
 checkpoint_folder_name = "layer-head-scaling"
 fulldir = os.path.join(pathlib.Path(__file__).parent.resolve(), checkpoint_folder_name, experiment_name, str(args.seed))
+print(fulldir)
 os.makedirs(fulldir, exist_ok=True)
 
 # Code to retrieve the version with the highest #epoch stored and restore it incl directory and its checkpoint
