@@ -6,7 +6,7 @@ dataset:
 gpt:
   max_epochs: 300
   context_length: 1024
-  n_layer: 8
+  n_layer: 4
   n_embd_per_head: 16
   n_head: 4
   scaling: std
@@ -17,5 +17,14 @@ gpt:
   num_parallel_samples: 100
   batch_size: 32
   batches_per_epoch: 100
+
 CUDA:
-  device_id: 3
+  device_id: 0
+
+metrics:
+  logger: comet
+
+comet:
+  api_key: mGG8ZYUSg6Hggq8qkPII0Vwx9
+  project: lag-gpt-ratio-scaling
+  workspace: rolandriachi

@@ -143,7 +143,7 @@ if "metrics" in config:
                                         project_name=config["comet"]["project"],
                                         workspace=config["comet"]["workspace"],
                                         save_dir=fulldir,
-                                        experiment_name=experiment_name,
+                                        experiment_name=experiment_name + '-seed-' + str(args.seed),
                                         auto_output_logging='simple'
                                        )
     else:

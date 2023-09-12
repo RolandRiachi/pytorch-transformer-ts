@@ -133,3 +133,6 @@ logs/
 lightning_logs/
 wandb/
 *.pkl
+
+# Checkpoints
+lag-gpt/layer-head-scaling
